@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>X PANEL | Mobile Gaming Utility</title>
+  <style>
+    /* ==========================================================================
+       VARIÁVEIS CSS & CONFIGURAÇÕES GLOBAIS
+       ========================================================================== */
+    :root {
+      --neon-color: #a855f7;
+      --neon-rgb: 168, 85, 247;
+      --bg-black: #050508;
+      --panel-bg: rgba(13, 13, 20, 0.88);
+      --panel-opacity: 0.88;
+      --glow-intensity: 1;
+      --fab-size: 62px;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --success-color: #22c55e;
+      --danger-color: #ef4444;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
+    }
+
+    /* Fundo estilo grid cibernético sutil */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 50% 0%, rgba(var(--neon-rgb), 0.16), transparent 60%),
+        linear-gradient(rgba(var(--neon-rgb), 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--neon-rgb), 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 28px 28px, 28px 28px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       ANIMAÇÕES & ESTADOS DE ANIMAÇÃO
+       ========================================================================== */
+    @keyframes pulseNeon {
+      0%, 100% {
+        box-shadow:
+          0 0 calc(12px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.75),
+          0 0 calc(26px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.4),
+          inset 0 0 calc(10px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.5);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow:
+          0 0 calc(20px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.95),
+          0 0 calc(38px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.65),
+          inset 0 0 calc(14px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.8);
+        transform: scale(1.05);
+      }
+    }
+
+    @keyframes statusBlink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.85); }
+    }
+
+    @keyframes panelEnter {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -46%) scale(0.94);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes hitRipple {
+      0% {
+        transform: translate(-50%, -50%) scale(0.4);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(2.2);
+        opacity: 0;
+      }
+    }
+
+    /* Classe aplicada no body quando animações estão desativadas */
+    body.no-animations * {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    /* ==========================================================================
+       UTILITÁRIOS & COMPONENTES REUTILIZÁVEIS
+       ========================================================================== */
+    .hidden {
+      display: none !important;
+    }
+
+    .neon-border {
+      border: 1.5px solid rgba(var(--neon-rgb), 0.65);
+      box-shadow:
+        0 0 calc(14px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.25),
+        inset 0 0 calc(8px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.12);
+    }
+
+    .neon-text {
+      color: var(--neon-color);
+      text-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.7);
+    }
+
+    .btn-neon {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--neon-color);
+      background: linear-gradient(135deg, rgba(var(--neon-rgb), 0.28), rgba(var(--neon-rgb), 0.12));
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 0 calc(15px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.35);
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .btn-neon:active {
+      transform: scale(0.96);
+      background: rgba(var(--neon-rgb), 0.45);
+      box-shadow: 0 0 calc(24px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.7);
+    }
+
+    .btn-sm {
+      padding: 9px 12px;
+      font-size: 0.78rem;
+      letter-spacing: 0.8px;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: none;
+    }
+
+    .btn-secondary:active {
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: none;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.65);
+      color: #fca5a5;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+    }
+
+    .btn-danger:active {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    /* ==========================================================================
+       1. TELA DE LOGIN
+       ========================================================================== */
+    #login-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(circle at center, rgba(var(--neon-rgb), 0.12) 0%, #050508 75%);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 370px;
+      background: rgba(12, 12, 18, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: var(--radius-lg);
+      padding: 28px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--neon-color), transparent);
+      box-shadow: 0 0 14px var(--neon-color);
+    }
+
+    .login-logo {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      border: 2px solid var(--neon-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.9rem;
+      font-weight: 900;
+      color: #fff;
+      background: radial-gradient(circle, rgba(var(--neon-rgb), 0.35), rgba(5, 5, 8, 0.9));
+      animation: pulseNeon 2.4s infinite ease-in-out;
+    }
+
+    .login-title {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 2.5px;
+      margin-bottom: 4px;
+    }
+
+    .login-subtitle {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+      letter-spacing: 0.6px;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.74rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper svg {
+      position: absolute;
+      left: 13px;
+      width: 18px;
+      height: 18px;
+      color: var(--neon-color);
+      pointer-events: none;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px 14px 12px 40px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(var(--neon-rgb), 0.35);
+      background: rgba(5, 5, 10, 0.85);
+      color: #fff;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .input-field:focus {
+      border-color: var(--neon-color);
+      box-shadow: 0 0 12px rgba(var(--neon-rgb), 0.35);
+    }
+
+    .login-feedback {
+      min-height: 18px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #f87171;
+      margin-bottom: 10px;
+    }
+
+    .login-hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 14px;
+      opacity: 0.8;
+    }
+
+    /* ==========================================================================
+       2. TELA PRINCIPAL (BASE DO APP ANDROID)
+       ========================================================================== */
+    #main-screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 14px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 15px;
+      border-radius: var(--radius-md);
+      background: rgba(12, 12, 18, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .brand-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(var(--neon-rgb), 0.2);
+      border: 1px solid var(--neon-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1rem;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(var(--neon-rgb), 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 1.8px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #4ade80;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+      animation: statusBlink 1.5s infinite ease-in-out;
+    }
+
+    .home-center-info {
+      max-width: 420px;
+      width: 100%;
+      margin: auto;
+      text-align: center;
+      padding: 18px 16px;
+      border-radius: var(--radius-lg);
+      background: rgba(12, 12, 18, 0.62);
+      border: 1px solid rgba(var(--neon-rgb), 0.24);
+    }
+
+    .home-center-info h2 {
+      font-size: 1.05rem;
+      letter-spacing: 1.4px;
+      margin-bottom: 6px;
+    }
+
+    .home-center-info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .telemetry-card {
+      background: rgba(5, 5, 10, 0.78);
+      border: 1px solid rgba(var(--neon-rgb), 0.25);
+      border-radius: var(--radius-sm);
+      padding: 9px 6px;
+    }
+
+    .telemetry-label {
+      font-size: 0.64rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 3px;
+    }
+
+    .telemetry-value {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--neon-color);
+    }
+
+    .bottom-hint {
+      text-align: center;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      padding-bottom: 4px;
+    }
+
+    /* ==========================================================================
+       BOTÃO CIRCULAR FLUTUANTE (X)
+       ========================================================================== */
+    #floating-x-btn {
+      position: fixed;
+      top: 112px;
+      left: 20px;
+      width: var(--fab-size);
+      height: var(--fab-size);
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(var(--neon-rgb), 0.55), rgba(10, 10, 16, 0.96) 75%);
+      border: 2px solid var(--neon-color);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      cursor: grab;
+      touch-action: none;
+      animation: pulseNeon 2.2s infinite ease-in-out;
+      transition: width 0.2s ease, height 0.2s ease;
+    }
+
+    #floating-x-btn:active {
+      cursor: grabbing;
+    }
+
+    #floating-x-btn .x-letter {
+      font-size: calc(var(--fab-size) * 0.46);
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -1px;
+      text-shadow: 0 0 calc(12px * var(--glow-intensity)) #ffffff, 0 0 calc(20px * var(--glow-intensity)) var(--neon-color);
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       3. PAINEL OVERLAY COM 4 ABAS (HUD)
+       ========================================================================== */
+    #x-panel-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 94%;
+      max-width: 420px;
+      max-height: 86vh;
+      background-color: rgba(12, 12, 18, var(--panel-opacity));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius-lg);
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: panelEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 15px;
+      border-bottom: 1px solid rgba(var(--neon-rgb), 0.28);
+      background: rgba(var(--neon-rgb), 0.08);
+    }
+
+    .panel-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+    }
+
+    .panel-version {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(var(--neon-rgb), 0.22);
+      color: var(--neon-color);
+      font-weight: 700;
+    }
+
+    .btn-close-panel {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .btn-close-panel:active {
+      background: rgba(var(--neon-rgb), 0.3);
+      border-color: var(--neon-color);
+    }
+
+    .panel-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: rgba(5, 5, 9, 0.7);
+      border-bottom: 1px solid rgba(var(--neon-rgb), 0.22);
+    }
+
+    .tab-btn {
+      padding: 9px 4px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 0.67rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .tab-btn svg {
+      width: 17px;
+      height: 17px;
+      transition: transform 0.2s, filter 0.2s;
+    }
+
+    .tab-btn.active {
+      color: #ffffff;
+      background: rgba(var(--neon-rgb), 0.14);
+    }
+
+    .tab-btn.active svg {
+      color: var(--neon-color);
+      filter: drop-shadow(0 0 6px rgba(var(--neon-rgb), 0.8));
+      transform: translateY(-1px);
+    }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      right: 15%;
+      height: 2.5px;
+      background: var(--neon-color);
+      box-shadow: 0 0 10px var(--neon-color);
+      border-radius: 2px;
+    }
+
+    .panel-body {
+      padding: 13px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    .control-card {
+      background: rgba(6, 6, 11, 0.74);
+      border: 1px solid rgba(var(--neon-rgb), 0.22);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .control-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .control-sublabel {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .control-value {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--neon-color);
+      min-width: 44px;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      outline: none;
+      margin-top: 8px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--neon-color);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 calc(10px * var(--glow-intensity)) var(--neon-color);
+      cursor: pointer;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-switch {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      transition: 0.25s;
+    }
+
+    .slider-switch::before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #cbd5e1;
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+
+    .switch input:checked + .slider-switch {
+      background-color: rgba(var(--neon-rgb), 0.35);
+      border-color: var(--neon-color);
+      box-shadow: 0 0 calc(10px * var(--glow-intensity)) rgba(var(--neon-rgb), 0.5);
+    }
+
+    .switch input:checked + .slider-switch::before {
+      transform: translateX(20px);
+      background-color: #ffffff;
+      box-shadow: 0 0 8px var(--neon-color);
+    }
+
+    /* Swatches de cor neon */
+    .color-swatches {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .swatch-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+    }
+
+    .swatch-btn.active {
+      border-color: #ffffff;
+      transform: scale(1.12);
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    /* ==========================================================================
+       4. ABA TRAIN (MINIGAME DE PRECISÃO & REFLEXO)
+       ========================================================================== */
+    .train-modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .mode-btn {
+      padding: 7px 4px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(var(--neon-rgb), 0.3);
+      background: rgba(5, 5, 10, 0.75);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: rgba(var(--neon-rgb), 0.25);
+      border-color: var(--neon-color);
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(var(--neon-rgb), 0.35);
+    }
+
+    .train-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+
+    .stat-box {
+      background: rgba(5, 5, 10, 0.8);
+      border: 1px solid rgba(var(--neon-rgb), 0.25);
+      border-radius: var(--radius-sm);
+      padding: 7px 4px;
+    }
+
+    .stat-label {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .stat-val {
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: var(--neon-color);
+      margin-top: 2px;
+    }
+
+    .arena-box {
+      position: relative;
+      width: 100%;
+      height: 215px;
+      border-radius: var(--radius-md);
+      background: radial-gradient(circle at center, rgba(var(--neon-rgb), 0.09), rgba(4, 4, 8, 0.95));
+      border: 1.5px solid rgba(var(--neon-rgb), 0.45);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .arena-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 5, 10, 0.78);
+      padding: 12px;
+      text-align: center;
+      z-index: 4;
+    }
+
+    .arena-overlay p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .target-dot {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff 0%, var(--neon-color) 45%, rgba(var(--neon-rgb), 0.25) 100%);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 calc(14px * var(--glow-intensity)) var(--neon-color);
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .hit-ring {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--neon-color);
+      pointer-events: none;
+      animation: hitRipple 0.35s ease-out forwards;
+      z-index: 3;
+    }
+
+    .train-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .toast-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 15, 24, 0.95);
+      border: 1px solid var(--neon-color);
+      box-shadow: 0 0 16px rgba(var(--neon-rgb), 0.45);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      z-index: 120;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================================================
+       1. TELA DE LOGIN
+       ======================================================================== -->
+  <section id="login-screen">
+    <form class="login-card neon-border" id="login-form">
+      <div class="login-logo">X</div>
+      <h1 class="login-title neon-text">X PANEL</h1>
+      <p class="login-subtitle">MOBILE GAMING OVERLAY &amp; TRAINING</p>
+
+      <div class="input-group">
+        <label for="login-user">Usuário</label>
+        <div class="input-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <input id="login-user" class="input-field" type="text" placeholder="Digite seu usuário" autocomplete="username" />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="login-pass">Senha</label>
+        <div class="input-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <input id="login-pass" class="input-field" type="password" placeholder="Digite sua senha" autocomplete="current-password" />
+        </div>
+      </div>
+
+      <div class="login-feedback" id="login-feedback"></div>
+
+      <button type="submit" class="btn-neon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+          <polyline points="10 17 15 12 10 7" />
+          <line x1="15" y1="12" x2="3" y2="12" />
+        </svg>
+        Entrar
+      </button>
+
+      <p class="login-hint">Acesso rápido: preencha qualquer usuário e senha para entrar.</p>
+    </form>
+  </section>
+
+  <!-- ========================================================================
+       2. TELA PRINCIPAL
+       ======================================================================== -->
+  <main id="main-screen" class="hidden">
+    <header class="top-bar neon-border">
+      <div class="brand-info">
+        <div class="brand-badge">X</div>
+        <span class="brand-title neon-text">X PANEL</span>
+      </div>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>ONLINE</span>
+      </div>
+    </header>
+
+    <section class="home-center-info">
+      <h2 class="neon-text">SISTEMA PRONTO</h2>
+      <p>Arraste o botão circular <strong>X</strong> para qualquer canto da tela ou toque nele para abrir e fechar o menu flutuante.</p>
+      <div class="telemetry-grid">
+        <div class="telemetry-card">
+          <div class="telemetry-label">Usuário</div>
+          <div class="telemetry-value" id="hud-user">PLAYER</div>
+        </div>
+        <div class="telemetry-card">
+          <div class="telemetry-label">Modo Aim</div>
+          <div class="telemetry-value" id="hud-aim-status">OFF</div>
+        </div>
+        <div class="telemetry-card">
+          <div class="telemetry-label">Recorde</div>
+          <div class="telemetry-value" id="hud-highscore">0</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="bottom-hint">Toque no botão <strong>X</strong> para alternar o painel • Modo standalone Android</footer>
+  </main>
+
+  <!-- ========================================================================
+       BOTÃO CIRCULAR FLUTUANTE (X)
+       ======================================================================== -->
+  <button id="floating-x-btn" class="hidden" type="button" aria-label="Abrir ou fechar X PANEL">
+    <span class="x-letter">X</span>
+  </button>
+
+  <!-- ========================================================================
+       3. PAINEL OVERLAY COM 4 ABAS
+       ======================================================================== -->
+  <aside id="x-panel-overlay" class="neon-border hidden" role="dialog" aria-label="Menu X PANEL">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <span class="panel-title neon-text">X PANEL</span>
+        <span class="panel-version">v2.4</span>
+      </div>
+      <button type="button" class="btn-close-panel" id="btn-close-panel" aria-label="Fechar painel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+
+    <nav class="panel-tabs" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="aim" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="8" />
+          <circle cx="12" cy="12" r="2" />
+          <line x1="12" y1="2" x2="12" y2="6" />
+          <line x1="12" y1="18" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="6" y2="12" />
+          <line x1="18" y1="12" x2="22" y2="12" />
+        </svg>
+        <span>AIM</span>
+      </button>
+
+      <button type="button" class="tab-btn" data-tab="train" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3" />
+        </svg>
+        <span>TRAIN</span>
+      </button>
+
+      <button type="button" class="tab-btn" data-tab="visual" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span>VISUAL</span>
+      </button>
+
+      <button type="button" class="tab-btn" data-tab="settings" role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+        <span>SETTINGS</span>
+      </button>
+    </nav>
+
+    <div class="panel-body">
+      <!-- ABA 1: AIM -->
+      <div class="tab-content active" id="tab-aim">
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Estabilização de Mira</div>
+              <div class="control-sublabel">Suaviza oscilações rápidas de toque</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="aim-stabilizer" />
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Sensibilidade Horizontal (X)</div>
+              <div class="control-sublabel">Ajuste fino de resposta lateral</div>
+            </div>
+            <span class="control-value" id="aim-sens-x-val">100%</span>
+          </div>
+          <input type="range" id="aim-sens-x" min="50" max="200" value="100" />
+        </div>
+
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Sensibilidade Vertical (Y)</div>
+              <div class="control-sublabel">Ajuste fino de elevação de mira</div>
+            </div>
+            <span class="control-value" id="aim-sens-y-val">100%</span>
+          </div>
+          <input type="range" id="aim-sens-y" min="50" max="200" value="100" />
+        </div>
+
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Raio de Precisão (FOV)</div>
+              <div class="control-sublabel">Zona de referência para treinos</div>
+            </div>
+            <span class="control-value" id="aim-fov-val">65%</span>
+          </div>
+          <input type="range" id="aim-fov" min="20" max="100" value="65" />
+        </div>
+      </div>
+
+      <!-- ABA 2: TRAIN (MINIGAME DE PRECISÃO & REFLEXO) -->
+      <div class="tab-content" id="tab-train">
+        <div class="train-modes">
+          <button type="button" class="mode-btn active" data-mode="precision">PRECISÃO</button>
+          <button type="button" class="mode-btn" data-mode="reflex">REFLEXO</button>
+          <button type="button" class="mode-btn" data-mode="moving">ALVOS MÓVEIS</button>
+        </div>
+
+        <div class="train-stats">
+          <div class="stat-box">
+            <div class="stat-label">Pontos</div>
+            <div class="stat-val" id="train-score">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Acertos</div>
+            <div class="stat-val" id="train-hits">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Reflexo</div>
+            <div class="stat-val" id="train-reflex">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Tempo</div>
+            <div class="stat-val" id="train-timer">30s</div>
+          </div>
+        </div>
+
+        <div class="arena-box" id="train-arena">
+          <div class="arena-overlay" id="train-overlay">
+            <p id="train-overlay-text">Toque em <strong>Iniciar</strong> para treinar precisão, reflexo e alvos móveis.</p>
+            <button type="button" class="btn-neon btn-sm" id="btn-train-start">Iniciar Treino</button>
+          </div>
+        </div>
+
+        <div class="train-actions">
+          <button type="button" class="btn-neon btn-sm" id="btn-train-start-alt">Iniciar</button>
+          <button type="button" class="btn-neon btn-sm btn-secondary" id="btn-train-reset">Reiniciar</button>
+        </div>
+      </div>
+
+      <!-- ABA 3: VISUAL -->
+      <div class="tab-content" id="tab-visual">
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Cor Neon</div>
+              <div class="control-sublabel">Escolha o destaque principal do painel</div>
+            </div>
+            <span class="control-value" id="visual-color-name">ROXO</span>
+          </div>
+          <div class="color-swatches">
+            <button type="button" class="swatch-btn active" data-color="#a855f7" data-rgb="168, 85, 247" data-name="ROXO" style="background:#a855f7; color:#a855f7;"></button>
+            <button type="button" class="swatch-btn" data-color="#c026d3" data-rgb="192, 38, 211" data-name="MAGENTA" style="background:#c026d3; color:#c026d3;"></button>
+            <button type="button" class="swatch-btn" data-color="#7c3aed" data-rgb="124, 58, 237" data-name="VIOLETA" style="background:#7c3aed; color:#7c3aed;"></button>
+            <button type="button" class="swatch-btn" data-color="#06b6d4" data-rgb="6, 182, 212" data-name="CIANO" style="background:#06b6d4; color:#06b6d4;"></button>
+            <button type="button" class="swatch-btn" data-color="#ec4899" data-rgb="236, 72, 153" data-name="ROSA" style="background:#ec4899; color:#ec4899;"></button>
+          </div>
+        </div>
+
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Tamanho do Botão X</div>
+              <div class="control-sublabel">Ajusta o diâmetro do botão flutuante</div>
+            </div>
+            <span class="control-value" id="visual-fab-val">62px</span>
+          </div>
+          <input type="range" id="visual-fab-size" min="48" max="84" value="62" />
+        </div>
+
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Transparência do Painel</div>
+              <div class="control-sublabel">Opacidade do fundo do menu</div>
+            </div>
+            <span class="control-value" id="visual-opacity-val">88%</span>
+          </div>
+          <input type="range" id="visual-opacity" min="50" max="100" value="88" />
+        </div>
+
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Intensidade do Brilho</div>
+              <div class="control-sublabel">Força do glow neon nas bordas e botões</div>
+            </div>
+            <span class="control-value" id="visual-glow-val">100%</span>
+          </div>
+          <input type="range" id="visual-glow" min="20" max="160" value="100" />
+        </div>
+
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Animações Visuais</div>
+              <div class="control-sublabel">Pulsação, transições e efeitos de toque</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="visual-animations" checked />
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 4: SETTINGS -->
+      <div class="tab-content" id="tab-settings">
+        <div class="control-card">
+          <div class="control-row">
+            <div>
+              <div class="control-label">Ativar Animações</div>
+              <div class="control-sublabel">Sincronizado com o ajuste visual</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="settings-animations" checked />
+              <span class="slider-switch"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="control-card">
+          <div class="control-label" style="margin-bottom: 8px;">Gerenciamento de Preferências</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button type="button" class="btn-neon btn-sm" id="btn-save-prefs">Salvar Preferências</button>
+            <button type="button" class="btn-neon btn-sm btn-secondary" id="btn-reset-prefs">Restaurar Configurações</button>
+          </div>
+        </div>
+
+        <div class="control-card">
+          <div class="control-label" style="margin-bottom: 6px;">Sessão Atual</div>
+          <div class="control-sublabel" style="margin-bottom: 10px;">Encerra a sessão e retorna para a tela de login.</div>
+          <button type="button" class="btn-neon btn-sm btn-danger" id="btn-logout">Sair</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast-banner" class="toast-banner hidden"></div>
+
+  <script>
+    /* ========================================================================
+       ESTADO PADRÃO & PERSISTÊNCIA
+       ======================================================================== */
+    const STORAGE_KEY = "x_panel_config_v1";
+
+    const DEFAULT_STATE = {
+      user: "PLAYER",
+      aimStabilizer: false,
+      aimSensX: 100,
+      aimSensY: 100,
+      aimFov: 65,
+      neonColor: "#a855f7",
+      neonRgb: "168, 85, 247",
+      neonName: "ROXO",
+      fabSize: 62,
+      panelOpacity: 88,
+      glowIntensity: 100,
+      animations: true,
+      highScore: 0
+    };
+
+    let state = { ...DEFAULT_STATE };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          state = { ...DEFAULT_STATE, ...JSON.parse(raw) };
+        }
+      } catch (e) {
+        state = { ...DEFAULT_STATE };
+      }
+    }
+
+    function saveState(showFeedback = true) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        if (showFeedback) showToast("Preferências salvas!");
+      } catch (e) {
+        if (showFeedback) showToast("Não foi possível salvar.");
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast-banner");
+      toast.textContent = msg;
+      toast.classList.remove("hidden");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 1800);
+    }
+
+    /* ========================================================================
+       APLICAR CONFIGURAÇÕES NA INTERFACE
+       ======================================================================== */
+    function applyStateToUI() {
+      const root = document.documentElement;
+      root.style.setProperty("--neon-color", state.neonColor);
+      root.style.setProperty("--neon-rgb", state.neonRgb);
+      root.style.setProperty("--fab-size", `${state.fabSize}px`);
+      root.style.setProperty("--panel-opacity", (state.panelOpacity / 100).toFixed(2));
+      root.style.setProperty("--glow-intensity", (state.glowIntensity / 100).toFixed(2));
+
+      document.body.classList.toggle("no-animations", !state.animations);
+
+      // HUD principal
+      document.getElementById("hud-user").textContent = state.user || "PLAYER";
+      document.getElementById("hud-aim-status").textContent = state.aimStabilizer ? "ON" : "OFF";
+      document.getElementById("hud-highscore").textContent = state.highScore;
+
+      // Aba AIM
+      document.getElementById("aim-stabilizer").checked = state.aimStabilizer;
+      document.getElementById("aim-sens-x").value = state.aimSensX;
+      document.getElementById("aim-sens-y").value = state.aimSensY;
+      document.getElementById("aim-fov").value = state.aimFov;
+      document.getElementById("aim-sens-x-val").textContent = `${state.aimSensX}%`;
+      document.getElementById("aim-sens-y-val").textContent = `${state.aimSensY}%`;
+      document.getElementById("aim-fov-val").textContent = `${state.aimFov}%`;
+
+      // Aba VISUAL
+      document.getElementById("visual-color-name").textContent = state.neonName;
+      document.querySelectorAll(".swatch-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.color === state.neonColor);
+      });
+      document.getElementById("visual-fab-size").value = state.fabSize;
+      document.getElementById("visual-fab-val").textContent = `${state.fabSize}px`;
+      document.getElementById("visual-opacity").value = state.panelOpacity;
+      document.getElementById("visual-opacity-val").textContent = `${state.panelOpacity}%`;
+      document.getElementById("visual-glow").value = state.glowIntensity;
+      document.getElementById("visual-glow-val").textContent = `${state.glowIntensity}%`;
+      document.getElementById("visual-animations").checked = state.animations;
+
+      // Aba SETTINGS
+      document.getElementById("settings-animations").checked = state.animations;
+    }
+
+    /* ========================================================================
+       1. LOGIN & NAVEGAÇÃO ENTRE TELAS
+       ======================================================================== */
+    const loginScreen = document.getElementById("login-screen");
+    const mainScreen = document.getElementById("main-screen");
+    const fabBtn = document.getElementById("floating-x-btn");
+    const panelOverlay = document.getElementById("x-panel-overlay");
+    const loginFeedback = document.getElementById("login-feedback");
+
+    function enterMainApp(username) {
+      state.user = username.trim().toUpperCase() || "PLAYER";
+      document.getElementById("hud-user").textContent = state.user;
+      loginScreen.classList.add("hidden");
+      mainScreen.classList.remove("hidden");
+      fabBtn.classList.remove("hidden");
+      showToast(`Bem-vindo, ${state.user}`);
+    }
+
+    document.getElementById("login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const userVal = document.getElementById("login-user").value.trim();
+      const passVal = document.getElementById("login-pass").value.trim();
+
+      if (!userVal || !passVal) {
+        loginFeedback.textContent = "Informe usuário e senha para acessar.";
+        return;
+      }
+      loginFeedback.textContent = "";
+      enterMainApp(userVal);
+    });
+
+    document.getElementById("btn-logout").addEventListener("click", () => {
+      stopTrainGame();
+      panelOverlay.classList.add("hidden");
+      fabBtn.classList.add("hidden");
+      mainScreen.classList.add("hidden");
+      loginScreen.classList.remove("hidden");
+      document.getElementById("login-pass").value = "";
+      showToast("Sessão encerrada.");
+    });
+
+    /* ========================================================================
+       BOTÃO FLUTUANTE X: ARRASTAR (TOUCH & MOUSE) + ABRIR/FECHAR PAINEL
+       ======================================================================== */
+    let isDragging = false;
+    let hasMoved = false;
+    let startX = 0;
+    let startY = 0;
+    let initialLeft = 0;
+    let initialTop = 0;
+
+    function togglePanel(forceState) {
+      const willOpen = typeof forceState === "boolean" ? forceState : panelOverlay.classList.contains("hidden");
+      panelOverlay.classList.toggle("hidden", !willOpen);
+      if (!willOpen) {
+        stopTrainGame();
+      }
+    }
+
+    document.getElementById("btn-close-panel").addEventListener("click", () => togglePanel(false));
+
+    function onPointerDown(clientX, clientY) {
+      isDragging = true;
+      hasMoved = false;
+      startX = clientX;
+      startY = clientY;
+      const rect = fabBtn.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+    }
+
+    function onPointerMove(clientX, clientY) {
+      if (!isDragging) return;
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        hasMoved = true;
+      }
+      if (!hasMoved) return;
+
+      const size = fabBtn.offsetWidth;
+      const maxX = window.innerWidth - size - 6;
+      const maxY = window.innerHeight - size - 6;
+      const nextLeft = Math.max(6, Math.min(maxX, initialLeft + dx));
+      const nextTop = Math.max(6, Math.min(maxY, initialTop + dy));
+
+      fabBtn.style.left = `${nextLeft}px`;
+      fabBtn.style.top = `${nextTop}px`;
+    }
+
+    function onPointerUp() {
+      if (!isDragging) return;
+      isDragging = false;
+      if (!hasMoved) {
+        togglePanel();
+      }
+    }
+
+    fabBtn.addEventListener("touchstart", (e) => {
+      if (e.touches.length > 0) {
+        onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (isDragging && e.touches.length > 0) {
+        onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    window.addEventListener("touchend", onPointerUp);
+
+    fabBtn.addEventListener("mousedown", (e) => {
+      onPointerDown(e.clientX, e.clientY);
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        onPointerMove(e.clientX, e.clientY);
+      }
+    });
+
+    window.addEventListener("mouseup", onPointerUp);
+
+    /* ========================================================================
+       3. NAVEGAÇÃO ENTRE AS 4 ABAS
+       ======================================================================== */
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetTab = btn.dataset.tab;
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach((c) => c.classList.remove("active"));
+
+        btn.classList.add("active");
+        document.getElementById(`tab-${targetTab}`).classList.add("active");
+
+        if (targetTab !== "train") {
+          stopTrainGame();
+        }
+      });
+    });
+
+    /* ========================================================================
+       CONTROLES DAS ABAS: AIM, VISUAL & SETTINGS
+       ======================================================================== */
+    document.getElementById("aim-stabilizer").addEventListener("change", (e) => {
+      state.aimStabilizer = e.target.checked;
+      document.getElementById("hud-aim-status").textContent = state.aimStabilizer ? "ON" : "OFF";
+    });
+
+    document.getElementById("aim-sens-x").addEventListener("input", (e) => {
+      state.aimSensX = Number(e.target.value);
+      document.getElementById("aim-sens-x-val").textContent = `${state.aimSensX}%`;
+    });
+
+    document.getElementById("aim-sens-y").addEventListener("input", (e) => {
+      state.aimSensY = Number(e.target.value);
+      document.getElementById("aim-sens-y-val").textContent = `${state.aimSensY}%`;
+    });
+
+    document.getElementById("aim-fov").addEventListener("input", (e) => {
+      state.aimFov = Number(e.target.value);
+      document.getElementById("aim-fov-val").textContent = `${state.aimFov}%`;
+    });
+
+    document.querySelectorAll(".swatch-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.neonColor = btn.dataset.color;
+        state.neonRgb = btn.dataset.rgb;
+        state.neonName = btn.dataset.name;
+        applyStateToUI();
+      });
+    });
+
+    document.getElementById("visual-fab-size").addEventListener("input", (e) => {
+      state.fabSize = Number(e.target.value);
+      applyStateToUI();
+    });
+
+    document.getElementById("visual-opacity").addEventListener("input", (e) => {
+      state.panelOpacity = Number(e.target.value);
+      applyStateToUI();
+    });
+
+    document.getElementById("visual-glow").addEventListener("input", (e) => {
+      state.glowIntensity = Number(e.target.value);
+      applyStateToUI();
+    });
+
+    function setAnimationsEnabled(enabled) {
+      state.animations = Boolean(enabled);
+      applyStateToUI();
+    }
+
+    document.getElementById("visual-animations").addEventListener("change", (e) => {
+      setAnimationsEnabled(e.target.checked);
+    });
+
+    document.getElementById("settings-animations").addEventListener("change", (e) => {
+      setAnimationsEnabled(e.target.checked);
+    });
+
+    document.getElementById("btn-save-prefs").addEventListener("click", () => {
+      saveState(true);
+    });
+
+    document.getElementById("btn-reset-prefs").addEventListener("click", () => {
+      const currentUser = state.user;
+      const currentRecord = state.highScore;
+      state = { ...DEFAULT_STATE, user: currentUser, highScore: currentRecord };
+      localStorage.removeItem(STORAGE_KEY);
+      applyStateToUI();
+      showToast("Configurações restauradas!");
+    });
+
+    /* ========================================================================
+       4. ABA TRAIN: MINIGAME DE PRECISÃO, REFLEXO & ALVOS MÓVEIS
+       ======================================================================== */
+    const arenaEl = document.getElementById("train-arena");
+    const overlayEl = document.getElementById("train-overlay");
+    const overlayTextEl = document.getElementById("train-overlay-text");
+
+    let trainMode = "precision"; // precision | reflex | moving
+    let trainRunning = false;
+    let score = 0;
+    let hits = 0;
+    let timeLeft = 30;
+    let targetSpawnTime = 0;
+    let timerInterval = null;
+    let animFrameId = null;
+    let targets = [];
+
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        trainMode = btn.dataset.mode;
+        if (trainRunning) {
+          restartTrainGame();
+        }
+      });
+    });
+
+    function updateTrainStatsUI(lastReflexMs = null) {
+      document.getElementById("train-score").textContent = score;
+      document.getElementById("train-hits").textContent = hits;
+      document.getElementById("train-timer").textContent = `${timeLeft}s`;
+      if (lastReflexMs !== null) {
+        document.getElementById("train-reflex").textContent = `${lastReflexMs}ms`;
+      }
+    }
+
+    function clearArenaTargets() {
+      arenaEl.querySelectorAll(".target-dot").forEach((el) => el.remove());
+      targets = [];
+    }
+
+    function spawnHitEffect(x, y) {
+      if (!state.animations) return;
+      const ring = document.createElement("span");
+      ring.className = "hit-ring";
+      ring.style.left = `${x}px`;
+      ring.style.top = `${y}px`;
+      arenaEl.appendChild(ring);
+      setTimeout(() => ring.remove(), 360);
+    }
+
+    function spawnTarget() {
+      if (!trainRunning) return;
+      const pad = 24;
+      const w = arenaEl.clientWidth || 300;
+      const h = arenaEl.clientHeight || 200;
+      const x = pad + Math.random() * Math.max(20, w - pad * 2);
+      const y = pad + Math.random() * Math.max(20, h - pad * 2);
+
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = "target-dot";
+      dot.style.left = `${x}px`;
+      dot.style.top = `${y}px`;
+
+      const spawnedAt = performance.now();
+      targetSpawnTime = spawnedAt;
+
+      const angle = Math.random() * Math.PI * 2;
+      const speed = trainMode === "moving" ? 1.5 + Math.random() * 1.1 : 0;
+
+      const targetObj = {
+        el: dot,
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        spawnedAt
+      };
+
+      const handleHit = (ev) => {
+        ev.stopPropagation();
+        if (!trainRunning) return;
+        const now = performance.now();
+        const reflexMs = Math.round(now - targetObj.spawnedAt);
+
+        hits += 1;
+        const speedBonus = Math.max(10, Math.round((1200 - Math.min(reflexMs, 1100)) / 12));
+        score += (trainMode === "moving" ? 120 : 100) + speedBonus;
+
+        if (score > state.highScore) {
+          state.highScore = score;
+          document.getElementById("hud-highscore").textContent = state.highScore;
+        }
+
+        spawnHitEffect(targetObj.x, targetObj.y);
+        updateTrainStatsUI(reflexMs);
+
+        dot.remove();
+        targets = targets.filter((t) => t !== targetObj);
+        spawnTarget();
+      };
+
+      dot.addEventListener("pointerdown", handleHit);
+      arenaEl.appendChild(dot);
+      targets.push(targetObj);
+    }
+
+    function updateMovingTargets() {
+      if (!trainRunning) return;
+      const radius = 19;
+      const w = arenaEl.clientWidth || 300;
+      const h = arenaEl.clientHeight || 200;
+
+      targets.forEach((t) => {
+        if (trainMode === "moving") {
+          t.x += t.vx;
+          t.y += t.vy;
+          if (t.x < radius || t.x > w - radius) t.vx *= -1;
+          if (t.y < radius || t.y > h - radius) t.vy *= -1;
+          t.x = Math.max(radius, Math.min(w - radius, t.x));
+          t.y = Math.max(radius, Math.min(h - radius, t.y));
+          t.el.style.left = `${t.x}px`;
+          t.el.style.top = `${t.y}px`;
+        }
+      });
+
+      animFrameId = requestAnimationFrame(updateMovingTargets);
+    }
+
+    function startTrainGame() {
+      stopTrainGame();
+      score = 0;
+      hits = 0;
+      timeLeft = 30;
+      trainRunning = true;
+      overlayEl.classList.add("hidden");
+      document.getElementById("train-reflex").textContent = "--";
+      updateTrainStatsUI();
+      clearArenaTargets();
+      spawnTarget();
+      if (trainMode === "reflex") {
+        spawnTarget();
+      }
+      animFrameId = requestAnimationFrame(updateMovingTargets);
+
+      timerInterval = setInterval(() => {
+        timeLeft -= 1;
+        updateTrainStatsUI();
+        if (timeLeft <= 0) {
+          finishTrainGame();
+        }
+      }, 1000);
+    }
+
+    function finishTrainGame() {
+      stopTrainGame();
+      saveState(false);
+      overlayTextEl.innerHTML = `Treino concluído! Pontos: <strong>${score}</strong> • Acertos: <strong>${hits}</strong>`;
+      document.getElementById("btn-train-start").textContent = "Jogar Novamente";
+      overlayEl.classList.remove("hidden");
+    }
+
+    function stopTrainGame() {
+      trainRunning = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+      clearArenaTargets();
+    }
+
+    function restartTrainGame() {
+      startTrainGame();
+      showToast("Treino reiniciado!");
+    }
+
+    document.getElementById("btn-train-start").addEventListener("click", startTrainGame);
+    document.getElementById("btn-train-start-alt").addEventListener("click", startTrainGame);
+    document.getElementById("btn-train-reset").addEventListener("click", restartTrainGame);
+
+    /* ========================================================================
+       INICIALIZAÇÃO
+       ======================================================================== */
+    loadState();
+    applyStateToUI();
+  </script>
+</body>
+</html>
